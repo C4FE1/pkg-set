@@ -1,4 +1,5 @@
 Titulo = "example test"
+Version = 1
 
 [PackageManagers]
 	[PackageManagers.Pacman]

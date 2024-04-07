@@ -1,0 +1,4 @@
+[Paths]
+	Generations = "src/pkg-set/src/gens/"
+	sets	    = "src/pkg-set/src/sets/"
+
