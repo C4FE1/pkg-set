@@ -1,1 +1,1 @@
-# The Fancy Fancier Fancier Fancier Package Setter (FFFFPS)
+# The Fancy Package Setter (FPS)
