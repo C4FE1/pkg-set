@@ -1,15 +1,15 @@
 all: pkg-set
 
-pkg-set: main.cpp
+pkg-set: src/main.cpp
 	g++ -o pkg-set src/main.cpp
 
 install: pkg-set
 	cp pkg-set /usr/local/bin
-
-clean: pkg-set
-	rm pkg-set
+	make clean
+clean:
+	rm -f pkg-set
 
 remove:
-	rm /usr/local/bin/pkg-set
-
+	rm -f /usr/local/bin/pkg-set
+	make clean
 .PHONY: install remove
