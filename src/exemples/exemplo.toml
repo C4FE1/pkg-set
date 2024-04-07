@@ -1,0 +1,16 @@
+Titulo = "example test"
+
+[PackageManagers]
+	[PackageManagers.Pacman]
+		Install = "sudo pacman -Syu --noconfirm"
+		Remove  = "sudo pacman -Rns --noconfirm"
+		Update  = "sudo pacman -Syu --noconfirm"
+
+	[PackageManagers.Aur]
+    		Install = "pikaur -S --noconfirm"
+    		Remove  = "pikaur -Rns --noconfirm"
+
+[Packages]
+	Aur    = ["eww-git"]	
+	Pacman = ["nsxiv", "alacritty"]
+
