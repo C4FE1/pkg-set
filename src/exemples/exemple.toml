@@ -1,0 +1,23 @@
+cmd = [
+	"echo Use seus comandos aqui.",
+	"echo comandos como echo e etc..."
+]
+[Managers]
+	[Managers.Pacman]
+		add    = "sudo pacman -Syu --noconfirm"
+		remove = "sudo pacman -Rns --noconfirm"
+
+	#[Managers.AUR]
+		#add    = "pikaur -Syu --noconfirm"
+		#remove = "pikaur -Rns --noconfirm"
+	
+	[Managers.systemd]
+		add    = "sudo systemctl enable"
+		remove = "sudo systemctl disable"
+		
+[Packages]
+	Pacman = ["htop"]
+	#AUR    = ["eww-git"]
+
+[Services]
+	systemd = ["sddm"]	

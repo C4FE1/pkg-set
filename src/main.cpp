@@ -5,12 +5,14 @@
 #include <filesystem>
 #include <cctype>
 #include <map>
+#include <set>
 #include "toml.hpp"
 
 
 std::map<std::string, std::string> config;
-std::map<std::string, std::string> packages_by_manager;
-std::map<std::string, std::map<std::string, std::string>> package_manager_commands;
+std::map<std::string, std::string> objects_by_manager;
+std::map<std::string, std::map<std::string, std::string>> commands_by_order;
+std::map<std::string, std::map<std::string, std::string>> manager_commands;
 
 std::string to_lower_func(const std::string& UPPER_STRING){
 	std::string lower_string;
@@ -29,80 +31,77 @@ void help_page(){
 	std::cout << "help   => mostra essa mensagem em seu terminal" << std::endl;
 	//ToDo
 	//std::cout << "list   => lista os conjutos de pacotes" << std::endl;
-	std::cout << "load   => carrega um conjunto de pacotes" << std::endl;
-	std::cout << "unload => descarrega um conjunto de pacotes" << std::endl;
+	std::cout << "load   => desabilita um conjunto de pacotes e instruções" << std::endl;
+	std::cout << "unload => habilita um conjunto de pacotes e instruções" << std::endl;
 }
-/*
+
 bool file_exists(const std::string& file_path) {
     std::ifstream file(file_path);
     return file.good();
 }
 
-int get_config_from_file() {
-	std::string user_home = getenv("HOME");
-	std::string user_config = "/.config/pkg-set/config.toml";
-	std::string user_config_path = user_home + user_config; // Fixed the variable name
-	std::string file_path;
-
-	if (file_exists(user_config_path)) {
-        	file_path = user_config_path;
-    	} else {
-        	file_path = "/etc/pkg-set/config.toml";
-    	}
-
-    	toml::table tbl;
-    	try {
-        	tbl = toml::parse_file(file_path);
-        	auto paths = tbl["Paths"].as_table();
-        	for (const auto& path : *paths) {
-            		std::string path_name_by_func = std::string(path.first);
-            		//std::cout << path_name_by_func << ":" << tbl["Paths"][path_name_by_func] << std::endl;
-			config[path_name_by_func] = *tbl["Paths"][path_name_by_func].value<std::string>();
-			std::cout << config[path_name_by_func] << std::endl;
-        	}
-
-    	} catch (const toml::parse_error& err) {
-        	std::cerr << "Failed to read the file: " << err.what() << std::endl; // Changed err to err.what()
-        	return 1;
-    	}
-    	return 0;
-}*/
-
 int get_data_from_file(const std::string& file_path){
 	toml::table tbl;
 	try{
+		//std::map<std::string, std::string> commands_map;
 		tbl = toml::parse_file( file_path );
-		auto package_managers = tbl["PackageManagers"].as_table();
-		for (const auto& package_manager : *package_managers ){
+		auto managers = tbl["Managers"].as_table();
+
+		//auto commands = tbl["cmd"];
+
+		for (const auto& manager : *managers ){
 			
-			//std::cout << package_manager.first << std::endl;
+			//std::cout << manager.first << std::endl;
 			
 			std::map<std::string, std::string> commands_map;
-			std::string package_manager_name = std::string(package_manager.first);
+			std::string manager_name = std::string(manager.first);
 
-			auto packages = tbl["Packages"][package_manager_name];
-			toml::array* package_array = packages.as_array();
-			
+			auto packages = tbl["Packages"][manager_name];
+			std::string objects_list;
+			objects_list.clear();
+			if(!packages){
+				auto services = tbl["Services"][manager_name];
+				toml::array* service_array = services.as_array();
+				//std::cout << services << ":" << services.type() << std::endl;
+				
+				for (toml::node& elem : *service_array){
+					std::string& str = elem.ref<std::string>();
+					objects_list += str + " ";
+				}
 
-			std::string package_list;
-			//std::cout << packages << ":" << packages.type() << std::endl;
+			}else{
+				toml::array* package_array = packages.as_array();
+
+				//std::string package_list;
+				//std::cout << packages << ":" << packages.type() << std::endl;
 			
-			for (toml::node& elem : *package_array){
-    				std::string& str = elem.ref<std::string>();
-				package_list += str + " ";
+				for (toml::node& elem : *package_array){
+    					std::string& str = elem.ref<std::string>();
+					objects_list += str + " ";
+				}
+
 			}
-			
-			packages_by_manager[package_manager_name] = package_list;
-
-			const std::string operations[3] = {"Install","Remove","Update"};
+			objects_by_manager[manager_name] = objects_list;
+			const std::string operations[3] = {"add","remove","update"};
 			
 			for (auto operation : operations){
-				commands_map[operation] = *tbl["PackageManagers"][package_manager_name][operation].value<std::string>();
+				commands_map[operation] = *tbl["Managers"][manager_name][operation].value<std::string>();
 				//std::cout << commands_map[operation] << std::endl;
-				package_manager_commands[package_manager_name][operation] = commands_map[operation];
+				manager_commands[manager_name][operation] = commands_map[operation];
 			}
 		}
-
+		/*
+		if (!commands){
+			std::cout << "Sem comandos" << std::endl;
+		}else{
+			std::cout << "Tem comandos" << std::endl;
+			toml::array* commands_array = commands.as_array();
+			for (toml::node& elem : *commands_array){
+				std::string& str = elem.ref<std::string>();
+				system(str.c_str());
+			}
+		}
+		*/
 	} catch ( const toml::parse_error&  err ){
 		std::cerr << "Falha ao ler o arquivo " << err<< std::endl;
 		return 1;
@@ -114,27 +113,38 @@ int main(int argc, char* argv[]){
 	//std::string user_home = getenv( "HOME" );
 	
 	//get_config_from_file();
+	
+	//get_data_from_file(argv[1]);
 
 	if (argc >= 3){
-		get_data_from_file(argv[2]);
+		if (!file_exists(argv[1])){
+			get_data_from_file(argv[2]);
+		}else{
+			std::cerr << "Erro Arquivo não existe" << std::endl;
+			return 1;
+		}
+		
 		if(to_lower_func(std::string(argv[1])) == "load"){
-			for (const auto& manager : package_manager_commands) {
-				std::string command_to_Install_by_manager = package_manager_commands[std::string(manager.first)]["Install"];
-				std::string command_to_Install = command_to_Install_by_manager + " " + packages_by_manager[std::string(manager.first)];
-				system(command_to_Install.c_str());
+			
+			for (const auto& manager : manager_commands) {
+				std::string command_to_add_by_manager = manager_commands[std::string(manager.first)]["add"];
+				std::string command_to_add = command_to_add_by_manager + " " + objects_by_manager[std::string(manager.first)];	
+				system(command_to_add.c_str());
 			}	
 			return 0;		
 		}else if (to_lower_func(std::string(argv[1])) == "unload"){
-			for (const auto& manager : package_manager_commands){
-				std::string command_to_Remove_by_manager = package_manager_commands[std::string(manager.first)]["Remove"];
-				std::string command_to_Remove = command_to_Remove_by_manager + " " + packages_by_manager[std::string(manager.first)];
-				system(command_to_Remove.c_str());
+			
+			for (const auto& manager : manager_commands){
+				std::string command_to_remove_by_manager = manager_commands[std::string(manager.first)]["remove"];
+				std::string command_to_remove = command_to_remove_by_manager + " " + objects_by_manager[std::string(manager.first)];
+				system(command_to_remove.c_str());
 			}
 			return 0;	
 		}else{
 			help_page();
 			return 1;
 		}
+
 	}else if(argc == 2){
 		if(to_lower_func(std::string(argv[1])) == "help"){
 			help_page();
