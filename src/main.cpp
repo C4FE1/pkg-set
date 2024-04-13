@@ -30,14 +30,29 @@ void help_page(){
 	std::cout << "opções:" << std::endl;
 	std::cout << "help   => mostra essa mensagem em seu terminal" << std::endl;
 	//ToDo
-	//std::cout << "list   => lista os conjutos de pacotes" << std::endl;
-	std::cout << "load   => desabilita um conjunto de pacotes e instruções" << std::endl;
-	std::cout << "unload => habilita um conjunto de pacotes e instruções" << std::endl;
+	//std::cout << "set => habilita uma geração especifica" << std::endl;
+	//std::cout << "merge => Une um conjunto de pacotes a sua geração atual" << std::endl; 
+	std::cout << "list   => lista as suas gerações" << std::endl;
+	//std::cout << "load   => desabilita um conjunto de pacotes e instruções" << std::endl;
+	//std::cout << "unload => habilita um conjunto de pacotes e instruções" << std::endl;
+}
+
+bool dir_exists(const std::string& dir_path) {
+	return std::filesystem::exists(dir_path) && std::filesystem::is_directory(dir_path);
 }
 
 bool file_exists(const std::string& file_path) {
-    std::ifstream file(file_path);
-    return file.good();
+    	std::ifstream file(file_path);
+    	return file.good();
+}
+
+void list_dir(std::string generations_dir_path){
+	std::filesystem::path generations_dir = generations_dir_path;
+	// Iterate over each file in the directory
+    	for (const auto& entry : std::filesystem::directory_iterator(generations_dir)) {
+        	// Print the file name
+        	std::cout << entry.path().filename() << std::endl;
+    	}
 }
 
 int get_data_from_file(const std::string& file_path){
@@ -55,31 +70,16 @@ int get_data_from_file(const std::string& file_path){
 			
 			std::map<std::string, std::string> commands_map;
 			std::string manager_name = std::string(manager.first);
+			std::string manager_collective = *tbl["Managers"][manager_name]["collective"].value<std::string>();
 
-			auto packages = tbl["Packages"][manager_name];
+			auto manager_collective_array = tbl[manager_collective][manager_name];
 			std::string objects_list;
 			objects_list.clear();
-			if(!packages){
-				auto services = tbl["Services"][manager_name];
-				toml::array* service_array = services.as_array();
-				//std::cout << services << ":" << services.type() << std::endl;
-				
-				for (toml::node& elem : *service_array){
-					std::string& str = elem.ref<std::string>();
-					objects_list += str + " ";
-				}
+			toml::array* collective_array = manager_collective_array.as_array();
 
-			}else{
-				toml::array* package_array = packages.as_array();
-
-				//std::string package_list;
-				//std::cout << packages << ":" << packages.type() << std::endl;
-			
-				for (toml::node& elem : *package_array){
-    					std::string& str = elem.ref<std::string>();
-					objects_list += str + " ";
-				}
-
+			for (toml::node& elem : *collective_array){
+				std::string& str = elem.ref<std::string>();
+				objects_list += str + " ";
 			}
 			objects_by_manager[manager_name] = objects_list;
 			const std::string operations[3] = {"add","remove","update"};
@@ -90,18 +90,7 @@ int get_data_from_file(const std::string& file_path){
 				manager_commands[manager_name][operation] = commands_map[operation];
 			}
 		}
-		/*
-		if (!commands){
-			std::cout << "Sem comandos" << std::endl;
-		}else{
-			std::cout << "Tem comandos" << std::endl;
-			toml::array* commands_array = commands.as_array();
-			for (toml::node& elem : *commands_array){
-				std::string& str = elem.ref<std::string>();
-				system(str.c_str());
-			}
-		}
-		*/
+
 	} catch ( const toml::parse_error&  err ){
 		std::cerr << "Falha ao ler o arquivo " << err<< std::endl;
 		return 1;
@@ -110,11 +99,7 @@ int get_data_from_file(const std::string& file_path){
 }
 
 int main(int argc, char* argv[]){
-	//std::string user_home = getenv( "HOME" );
-	
-	//get_config_from_file();
-	
-	//get_data_from_file(argv[1]);
+	std::string user_home = getenv( "HOME" );
 
 	if (argc >= 3){
 		if (!file_exists(argv[1])){
@@ -129,7 +114,7 @@ int main(int argc, char* argv[]){
 			for (const auto& manager : manager_commands) {
 				std::string command_to_add_by_manager = manager_commands[std::string(manager.first)]["add"];
 				std::string command_to_add = command_to_add_by_manager + " " + objects_by_manager[std::string(manager.first)];	
-				system(command_to_add.c_str());
+				//system(command_to_add.c_str());
 			}	
 			return 0;		
 		}else if (to_lower_func(std::string(argv[1])) == "unload"){
@@ -137,7 +122,7 @@ int main(int argc, char* argv[]){
 			for (const auto& manager : manager_commands){
 				std::string command_to_remove_by_manager = manager_commands[std::string(manager.first)]["remove"];
 				std::string command_to_remove = command_to_remove_by_manager + " " + objects_by_manager[std::string(manager.first)];
-				system(command_to_remove.c_str());
+				//system(command_to_remove.c_str());
 			}
 			return 0;	
 		}else{
@@ -149,6 +134,15 @@ int main(int argc, char* argv[]){
 		if(to_lower_func(std::string(argv[1])) == "help"){
 			help_page();
 			return 0;
+		}else if(to_lower_func(std::string(argv[1])) == "list"){
+			std::string user_generation_dir = user_home + "/.config/pkg-set/";
+			if (dir_exists(user_generation_dir) == true){
+				list_dir(user_generation_dir);
+				return 0;
+			}else{
+				std::cout << "Erro: ~/.config/pkg-set/ não foi encontrado." << std::endl;
+				return 1;
+			}
 		}
 	}else{
 		std::cerr << "Agumentos insuficientes." << std::endl;
