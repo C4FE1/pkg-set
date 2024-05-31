@@ -2,9 +2,23 @@
 
 #include "Globals.hpp"
 
-//int get_collectives();
-
-int get_collectives(const std::string& manager_name, const std::string& file_path);
+int get_collectives(const std::string& file_path){
+	for(const auto& manager : manager_commands){
+	tbl = toml::parse_file( file_path );
+       	auto manager_collective_array = tbl[manager_collective[std::string(manager.first)]];
+	std::string objects_list;
+	objects_list.clear();
+	toml::array* collective_array = manager_collective_array.as_array();
+	for (toml::node& elem : *collective_array){
+		std::string& str = elem.ref<std::string>();
+		std::cout << str << std::endl;
+		objects_list += str + " ";
+	}
+	
+	objects_by_manager[std::string(manager.first)] = objects_list;
+	}
+	return 0;
+}
 
 int get_manager_info(const std::string& manager_path, const std::string& manager_name){
 	try{
@@ -45,71 +59,12 @@ int get_configs(const std::string& config_path){
 
 				std::string manager_file = managers_path + elem + ".toml";
 				get_manager_info(manager_file , elem);
-				//get_collectives(elem, file_path);
 			}else{
 				std::cout << elem << " nao existe" << std::endl;
 			}
 		}
 
 	} catch ( const toml::parse_error& err ){
-		std::cerr << "Falha ao ler o arquivo " << err<< std::endl;
-		return 1;
-	}
-	return 0;
-}
-
-int get_collectives(const std::string& manager_name, const std::string& file_path){
-	tbl = toml::parse_file( file_path );
-       	auto manager_collective_array = tbl[manager_collective[manager_name]];
-	std::string objects_list;
-	objects_list.clear();
-	toml::array* collective_array = manager_collective_array.as_array();
-	for (toml::node& elem : *collective_array){
-		std::string& str = elem.ref<std::string>();
-		std::cout << str << std::endl;
-		objects_list += str + " ";
-	}
-	objects_by_manager[manager_name] = objects_list;
-	return 0;
-}
-
-int get_data_from_file(const std::string& file_path){
-
-	try{
-		tbl = toml::parse_file( file_path );
-		auto managers = tbl["Managers"].as_table();
-
-		for (const auto& manager : *managers ){
-			
-			std::cout << manager.first << std::endl;
-			
-			std::map<std::string, std::string> commands_map;
-			std::string manager_name = std::string(manager.first);
-			//std::string 
-			manager_collective[manager_name] = *tbl["Managers"][manager_name]["colective"].value<std::string>();
-
-			auto manager_collective_array = tbl[manager_collective[manager_name]][manager_name];
-			std::string objects_list;
-			objects_list.clear();
-			toml::array* collective_array = manager_collective_array.as_array();
-			if(tbl["Managers"][manager_name]["colective"] != NULL){
-
-				for (toml::node& elem : *collective_array){
-					std::string& str = elem.ref<std::string>();
-					std::cout << str << std::endl;
-					objects_list += str + " ";
-				}
-			}
-			objects_by_manager[manager_name] = objects_list;
-			
-			for (auto operation : operations){
-				commands_map[operation] = *tbl["Managers"][manager_name][operation].value<std::string>();
-				std::cout << commands_map[operation] << std::endl;
-				manager_commands[manager_name][operation] = commands_map[operation];
-			}
-		}
-
-	} catch ( const toml::parse_error&  err ){
 		std::cerr << "Falha ao ler o arquivo " << err<< std::endl;
 		return 1;
 	}

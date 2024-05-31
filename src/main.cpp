@@ -5,8 +5,8 @@ void help_page(){
 	std::cout << "exemplo: config-sys pkg-set load jonhspkgs" << std::endl;
 	std::cout << "opções:" << std::endl;
 	std::cout << "help    => mostra essa mensagem em seu terminal" << std::endl;
+	//ToDo
 	//std::cout << "set     => habilita uma geração especifica" << std::endl;
-	// ToDo
 	//std::cout << "merge   => Une um conjunto de pacotes a sua geração atual" << std::endl;
 	//std::cout << "unmerge => Separa um conjuto de pacotes de sua geração atual" << std::endl;
 	std::cout << "list    => lista as suas gerações" << std::endl;
@@ -22,7 +22,8 @@ int main(int argc, char* argv[]){
 
 	if (argc >= 3){
 		if (file_exists(argv[1]) == false){
-			//get_data_from_file(argv[2]);
+			get_configs(user_config_dir + "pkg-set.toml");
+			get_collectives(std::string(argv[2]));	
 		}else{
 			std::cerr << "Erro Arquivo não existe" << std::endl;
 			return 1;
@@ -33,7 +34,7 @@ int main(int argc, char* argv[]){
 			return 0;
 
 		}else if (to_lower_func(std::string(argv[1])) == "unload"){
-			load_or_unload(2);
+			load_or_unload(1);
 			return 0;	
 		
 		}else if (to_lower_func(std::string(argv[1])) == "merge"){
@@ -46,11 +47,8 @@ int main(int argc, char* argv[]){
 				return 1;
 			}
 		}else if (to_lower_func(std::string(argv[1])) == "set"){
+			std<< "Sei lá vo ler o help()." << std::endl;
 			return 1;	
-		}else if(to_lower_func(std::string(argv[1])) == "config"){
-			std::cout << user_config_dir + "pkg-set.toml" << std::endl;
-			get_configs(user_config_dir + "pkg-set.toml", std::string(argv[2]));
-			load_or_unload(0);
 		}else{
 			help_page();
 			return 1;
